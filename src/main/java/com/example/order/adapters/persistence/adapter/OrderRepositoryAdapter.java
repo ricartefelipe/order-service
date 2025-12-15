@@ -19,14 +19,12 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 
 import java.sql.SQLException;
-import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Component
 public class OrderRepositoryAdapter implements OrderRepositoryPort {
@@ -72,12 +70,29 @@ public class OrderRepositoryAdapter implements OrderRepositoryPort {
     @Override
     public PageResult<Order> findAll(Optional<OrderStatus> status, PageQuery pageQuery) {
         Pageable pageable = toPageable(pageQuery);
-
         Page<UUID> idPage = status
                 .map(s -> repository.findIdsByStatus(s.name(), pageable))
                 .orElseGet(() -> repository.findAllIds(pageable));
 
-        List<Order> content = fetchInOrder(idPage.getContent()).stream()
+        List<UUID> ids = idPage.getContent();
+        if (ids.isEmpty()) {
+            return PageResult.of(
+                    List.of(),
+                    idPage.getNumber(),
+                    idPage.getSize(),
+                    idPage.getTotalElements(),
+                    idPage.getTotalPages()
+            );
+        }
+        List<OrderEntity> entities = repository.findAllWithItemsByIdIn(ids);
+        Map<UUID, Integer> position = new HashMap<>(ids.size());
+        for (int i = 0; i < ids.size(); i++) {
+            position.put(ids.get(i), i);
+        }
+
+        entities.sort(Comparator.comparingInt(e -> position.getOrDefault(e.getId(), Integer.MAX_VALUE)));
+
+        List<Order> content = entities.stream()
                 .map(mapper::toDomain)
                 .toList();
 
@@ -88,21 +103,6 @@ public class OrderRepositoryAdapter implements OrderRepositoryPort {
                 idPage.getTotalElements(),
                 idPage.getTotalPages()
         );
-    }
-
-    private List<OrderEntity> fetchInOrder(List<UUID> ids) {
-        if (ids == null || ids.isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        List<OrderEntity> loaded = repository.findAllWithItemsByIdIn(ids);
-        Map<UUID, OrderEntity> byId = loaded.stream()
-                .filter(Objects::nonNull)
-                .collect(Collectors.toMap(OrderEntity::getId, Function.identity(), (left, right) -> left));
-        return ids.stream()
-                .map(byId::get)
-                .filter(Objects::nonNull)
-                .toList();
     }
 
     private static Pageable toPageable(PageQuery pageQuery) {
