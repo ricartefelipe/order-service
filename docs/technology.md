@@ -46,7 +46,10 @@
 **Risco:** ao listar pedidos e acessar itens, executar uma query por pedido.
 
 **Mitigação:**
-- `hibernate.default_batch_fetch_size=100` + `@BatchSize(size=100)` na coleção.
+- Paginação em 2 etapas para manter performance e evitar N+1:
+  1) query paginada apenas de `ids` (com sort)
+  2) query em batch para carregar pedidos + itens (`IN (...)` + `fetch join`)
+  (batch fetch do Hibernate permanece como salvaguarda adicional)
 - `open-in-view=false` e mapeamento dentro de transações read-only.
 
 ### Hotspots no banco (picos)
