@@ -12,8 +12,10 @@ import com.example.order.application.usecase.GetOrderUseCase;
 import com.example.order.application.usecase.ListOrdersUseCase;
 import com.example.order.domain.model.Order;
 import com.example.order.domain.model.OrderStatus;
+import org.springframework.data.domain.Sort;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -64,7 +66,7 @@ public class OrderController {
     @GetMapping
     public ResponseEntity<PagedResponse<OrderResponse>> list(
             @RequestParam(value = "status", required = false) OrderStatus status,
-            Pageable pageable
+            @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
         PageQuery pageQuery = mapper.toPageQuery(pageable);
         PageResult<Order> result = listOrdersUseCase.list(Optional.ofNullable(status), pageQuery);

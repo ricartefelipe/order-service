@@ -184,9 +184,7 @@ Isso funciona sob concorrência (PostgreSQL faz locking no índice de unicidade)
   - `index(created_at)`
   - `index(order_items.order_id)`
 - Pool Hikari configurável por variáveis de ambiente
-- Listagens evitam N+1 com paginação em 2 etapas:
-  1) pagina apenas os `ids` (com sort)
-  2) busca pedidos + itens em batch (`IN (...)` + `fetch join`) mantendo a mesma ordenação
-  (batch fetch do Hibernate permanece como salvaguarda)
+- Listagem paginada otimizada para evitar N+1: pagina por IDs e carrega `orders + items` em batch (IN + fetch)
+- `hibernate.default_batch_fetch_size=100` + `@BatchSize` como salvaguarda adicional
 - `open-in-view=false` e mapeamento dentro de transações read-only
 
