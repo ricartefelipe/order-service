@@ -5,6 +5,13 @@ spring:
   application:
     name: order-service
 
+  data:
+    web:
+      pageable:
+        # Protege o serviço contra respostas muito grandes.
+        # Mantém o contrato da documentação (max 200).
+        max-page-size: 200
+
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/orders}
     username: ${SPRING_DATASOURCE_USERNAME:orders}
