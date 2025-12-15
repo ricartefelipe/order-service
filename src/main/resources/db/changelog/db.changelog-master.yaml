@@ -1,0 +1,106 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-create-orders-and-items
+      author: order-service
+      changes:
+        - createTable:
+            tableName: orders
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+              - column:
+                  name: external_order_id
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: status
+                  type: varchar(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: total_amount
+                  type: numeric(19,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+
+        - createTable:
+            tableName: order_items
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+              - column:
+                  name: order_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: product_id
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: quantity
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: unit_price
+                  type: numeric(19,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: line_total
+                  type: numeric(19,2)
+                  constraints:
+                    nullable: false
+
+        - addForeignKeyConstraint:
+            constraintName: fk_order_items_orders
+            baseTableName: order_items
+            baseColumnNames: order_id
+            referencedTableName: orders
+            referencedColumnNames: id
+            onDelete: CASCADE
+
+        - createIndex:
+            tableName: orders
+            indexName: idx_orders_status_created_at
+            columns:
+              - column:
+                  name: status
+              - column:
+                  name: created_at
+
+        - createIndex:
+            tableName: orders
+            indexName: idx_orders_created_at
+            columns:
+              - column:
+                  name: created_at
+
+        - createIndex:
+            tableName: order_items
+            indexName: idx_order_items_order_id
+            columns:
+              - column:
+                  name: order_id
