@@ -1,5 +1,16 @@
 name: Sync main with develop
 
+# Mantém main alinhado com develop via PULL REQUEST (a branch main é protegida e
+# rejeita push direto/force-push). A cada push em develop, este workflow abre ou
+# reutiliza um PR develop -> main e habilita o auto-merge, que conclui assim que
+# os requisitos da proteção (revisões/checks) forem atendidos.
+#
+# Requisitos (fora deste YAML):
+# A) Settings -> Actions -> General -> Workflow permissions: «Read and write» e
+#    «Allow GitHub Actions to create and approve pull requests»; OU
+# B) Secret SYNC_REPO_PAT (PAT com escopo repo). Substitui GITHUB_TOKEN abaixo.
+# C) Settings -> General -> «Allow auto-merge» habilitado (para o merge automático).
+
 on:
   push:
     branches: [develop]
@@ -11,6 +22,7 @@ concurrency:
 
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
   sync:
@@ -20,10 +32,34 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Advance main to match develop
+      - name: Abrir/atualizar PR develop -> main e habilitar auto-merge
+        env:
+          SYNC_REPO_PAT: ${{ secrets.SYNC_REPO_PAT }}
+          FALLBACK_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
+          if [[ -n "${SYNC_REPO_PAT:-}" ]]; then
+            export GH_TOKEN="$SYNC_REPO_PAT"
+          else
+            export GH_TOKEN="$FALLBACK_TOKEN"
+          fi
+
           git fetch origin main develop
-          git checkout main
-          git reset --hard origin/develop
-          git push origin main --force-with-lease
+          if [[ "$(git rev-parse origin/main)" == "$(git rev-parse origin/develop)" ]]; then
+            echo "main já está sincronizado com develop."
+            exit 0
+          fi
+
+          PR=$(gh pr list --repo "$REPOSITORY" --base main --head develop --state open --json number -q '.[0].number // empty')
+          if [[ -z "${PR:-}" ]] || [[ "$PR" == "null" ]]; then
+            gh pr create --repo "$REPOSITORY" --base main --head develop \
+              --title 'chore(sync): alinhar main com develop' \
+              --body 'PR automático para sincronizar main com develop. O push direto em main é bloqueado pela proteção de branch.'
+            PR=$(gh pr list --repo "$REPOSITORY" --base main --head develop --state open --json number -q '.[0].number')
+          fi
+
+          echo "PR de sync: #$PR"
+          # Habilita auto-merge; conclui sozinho quando reviews/checks forem atendidos.
+          gh pr merge "$PR" --repo "$REPOSITORY" --merge --auto \
+            || echo "::notice ::PR #$PR aberto. Será mergeado quando os requisitos da proteção forem atendidos (revisão/checks). Confirme que «Allow auto-merge» está habilitado."
