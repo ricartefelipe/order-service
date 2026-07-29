@@ -15,4 +15,6 @@ COPY --from=build /workspace/target/order-service-*.jar /app/app.jar
 
 EXPOSE 8080
 
-ENTRYPOINT ["java","-jar","/app/app.jar"]
+ENV PORT=8080
+
+ENTRYPOINT ["sh","-c","exec java -Dserver.port=${PORT:-${SERVER_PORT:-8080}} -jar /app/app.jar"]
