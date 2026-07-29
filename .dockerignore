@@ -1,0 +1,11 @@
+target
+.git
+.github
+.env
+.env.*
+!.env.example
+docs
+*.md
+.idea
+.vscode
+**/src/test

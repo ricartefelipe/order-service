@@ -19,13 +19,15 @@ services:
     build:
       context: .
     environment:
+      PORT: "8080"
+      SERVER_PORT: "8080"
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/orders
-      SPRING_DATASOURCE_USERNAME: orders
-      SPRING_DATASOURCE_PASSWORD: orders
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-orders}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-orders}
       # Ajuste opcional para picos; 20 é um valor seguro para local.
-      SPRING_DATASOURCE_HIKARI_MAX_POOL_SIZE: 20
+      SPRING_DATASOURCE_HIKARI_MAX_POOL_SIZE: ${SPRING_DATASOURCE_HIKARI_MAX_POOL_SIZE:-20}
     ports:
-      - "8080:8080"
+      - "${PORT:-8080}:8080"
     depends_on:
       postgres:
         condition: service_healthy
