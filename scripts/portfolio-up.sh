@@ -30,3 +30,6 @@ done
 echo "OK: order-service saudável em ${HEALTH_URL}"
 echo "API:     http://localhost:${PORT}"
 echo "Swagger: http://localhost:${PORT}/swagger-ui.html"
+ADMIN_PORT="${ADMIN_PORT:-9086}"
+echo "Admin:   http://localhost:${ADMIN_PORT}"
+API_BASE="http://127.0.0.1:${PORT}" ./scripts/seed-demo-orders.sh || true
