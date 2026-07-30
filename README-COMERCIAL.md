@@ -29,7 +29,8 @@ O Order Service entrega essa fundação confiável, do jeito que se coloca em pr
 | 4 | Observabilidade | Correlation id via `X-Correlation-Id`, Actuator e logs estruturados para operar com confiança. |
 | 5 | Migrações versionadas | PostgreSQL 16 + Liquibase (YAML) — schema versionado e reprodutível. |
 | 6 | Documentação madura | ADRs (Clean Architecture, ingestão idempotente), `architecture.md`, `integration.md`, `runbook.md`, `technology.md`. |
-| 7 | Demonstrável | Scripts simulando os Sistemas Externos A e B, Swagger UI, Docker Compose e CI. |
+| 7 | Demonstrável | Scripts simulando os Sistemas Externos A e B, Swagger UI, Order Ledger (admin Vite), Docker Compose e CI. |
+| 8 | Order Ledger | Console ops (lista/criação/consulta) com feedback de idempotência — sem tela de login (API aberta). |
 
 **Stack:** Java 21 · Spring Boot 3 · PostgreSQL 16 · Liquibase · OpenAPI/Swagger · Docker Compose.
 
@@ -53,6 +54,7 @@ docker compose up -d
 
 - API: `http://localhost:8080`
 - Swagger UI: `http://localhost:8080/swagger-ui.html`
+- Order Ledger (admin): `http://localhost:9086`
 
 Simule a integração ponta a ponta:
 

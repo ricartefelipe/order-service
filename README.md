@@ -27,6 +27,10 @@ A aplicação sobe em:
 
 - API: `http://localhost:8080`
 - Swagger UI: `http://localhost:8080/swagger-ui.html`
+- Order Ledger (admin UI): `http://localhost:9086`
+
+Para AWS portfolio, use `docker compose -f docker-compose.yml -f docker-compose.aws.yml up -d --build`
+(API `:8082`, admin `:9086`).
 
 ## Como rodar testes
 
