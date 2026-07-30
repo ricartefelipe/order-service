@@ -1,0 +1,11 @@
+services:
+  postgres:
+    ports: !override []
+
+  order-service:
+    ports: !override
+      - "8082:8080"
+
+  order-admin:
+    ports: !override
+      - "9086:80"
