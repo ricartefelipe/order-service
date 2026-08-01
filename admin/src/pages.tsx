@@ -1,7 +1,6 @@
 import { FormEvent, useEffect, useState, type ReactNode } from 'react'
 import { Link, NavLink, useNavigate, useParams } from 'react-router-dom'
 import { api } from './api/client'
-import { loginTotalRecall } from './totalrecall'
 import type { CreateOrderItemInput, Order, OrderStatus } from './types'
 
 function money(value: number | undefined): string {
@@ -44,65 +43,6 @@ function Shell({ title, lede, children }: { title: string; lede?: string; childr
         {children}
       </div>
     </div>
-  )
-}
-
-export function LoginPage({ onAuthenticated }: { onAuthenticated: () => void }) {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
-
-  async function onSubmit(event: FormEvent) {
-    event.preventDefault()
-    setLoading(true)
-    setError(null)
-    const result = await loginTotalRecall(email.trim(), password)
-    setLoading(false)
-
-    if (!result?.valid) {
-      setError('E-mail ou senha TotalRecall inválidos. Verifique suas credenciais e tente novamente.')
-      return
-    }
-
-    sessionStorage.setItem('order-ledger-totalrecall-session', result.profile.email)
-    onAuthenticated()
-  }
-
-  return (
-    <main className="login-screen">
-      <form className="panel login-panel" onSubmit={onSubmit}>
-        <p className="eyebrow">Order Ledger</p>
-        <h1>Acessar operações</h1>
-        <p className="lede">Use seu e-mail/senha TotalRecall para acessar o console de pedidos.</p>
-        <div className="field">
-          <label htmlFor="email">E-mail</label>
-          <input
-            id="email"
-            type="email"
-            autoComplete="username"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            required
-          />
-        </div>
-        <div className="field">
-          <label htmlFor="password">Senha TotalRecall</label>
-          <input
-            id="password"
-            type="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            required
-          />
-        </div>
-        {error ? <p className="error">{error}</p> : null}
-        <button className="btn" type="submit" disabled={loading}>
-          {loading ? 'Entrando…' : 'Entrar'}
-        </button>
-      </form>
-    </main>
   )
 }
 
