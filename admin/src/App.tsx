@@ -1,7 +1,16 @@
+import { useState } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
-import { CreatePage, LookupPage, OrderDetailPage, OrdersPage } from './pages'
+import { CreatePage, LoginPage, LookupPage, OrderDetailPage, OrdersPage } from './pages'
 
 export default function App() {
+  const [authenticated, setAuthenticated] = useState(
+    () => sessionStorage.getItem('order-ledger-totalrecall-session') !== null,
+  )
+
+  if (!authenticated) {
+    return <LoginPage onAuthenticated={() => setAuthenticated(true)} />
+  }
+
   return (
     <BrowserRouter>
       <Routes>

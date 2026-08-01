@@ -136,6 +136,37 @@ select {
   animation: rise 0.45s var(--ease) both;
 }
 
+.login-screen {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 1.5rem;
+}
+
+.login-panel {
+  display: grid;
+  width: min(100%, 28rem);
+  gap: 1rem;
+}
+
+.login-panel h1 {
+  margin: 0;
+}
+
+.login-panel .lede {
+  margin: 0;
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--brand-strong);
+  font-family: var(--display);
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 @keyframes rise {
   from {
     opacity: 0;
