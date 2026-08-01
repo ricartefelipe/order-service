@@ -29,7 +29,7 @@ A aplicação sobe em:
 - Swagger UI: `http://localhost:8080/swagger-ui.html`
 - Order Ledger (admin UI): `http://localhost:9086`
 
-O console admin aceita e-mail/senha TotalRecall para o sistema `order-service`; configure `VITE_TOTALRECALL_URL=https://54.94.163.136.sslip.io` no build da UI.
+O console admin abre direto na operação (sem login TotalRecall). Auth de produto, quando houver, deve ser nativa do Order Ledger.
 
 Para AWS portfolio, use `docker compose -f docker-compose.yml -f docker-compose.aws.yml up -d --build`
 (API `:8082`, admin `:9086`).
