@@ -29,7 +29,9 @@ A aplicação sobe em:
 - Swagger UI: `http://localhost:8080/swagger-ui.html`
 - Order Ledger (admin UI): `http://localhost:9086`
 
-O console admin abre direto na operação (sem login TotalRecall). Auth de produto, quando houver, deve ser nativa do Order Ledger.
+O console admin abre direto na operação (API sem autenticação de produto).
+TotalRecall não provisiona credenciais para este alvo — exclusão consciente
+enquanto não houver identidade nativa.
 
 Para AWS portfolio, use `docker compose -f docker-compose.yml -f docker-compose.aws.yml up -d --build`
 (API `:8082`, admin `:9086`).
