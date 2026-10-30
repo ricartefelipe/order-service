@@ -1,0 +1,92 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: backend (build, unit and integration tests with PostgreSQL)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-java@f2beeb24e141e01a676f977032f5a29d81c9e27e # v5.1.0
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - name: Build, unit tests and integration tests (Testcontainers PostgreSQL 16)
+        run: mvn -B verify
+      - name: Count executed tests
+        run: |
+          python3 - <<'PY'
+          import glob, re, sys
+          total = errors = failures = skipped = 0
+          for path in glob.glob("target/surefire-reports/TEST-*.xml"):
+              head = open(path).read(4000)
+              total += int(re.search(r'tests="(\d+)"', head).group(1))
+              errors += int(re.search(r'errors="(\d+)"', head).group(1))
+              failures += int(re.search(r'failures="(\d+)"', head).group(1))
+              skipped += int(re.search(r'skipped="(\d+)"', head).group(1))
+          print(f"tests={total} errors={errors} failures={failures} skipped={skipped}")
+          sys.exit(0 if total > 0 and errors == failures == skipped == 0 else 1)
+          PY
+      - name: Scan the packaged dependencies and the admin lockfile (HIGH and CRITICAL block)
+        run: |
+          docker run --rm -v "$PWD:/src:ro" -w /src aquasec/trivy:0.76.1 fs \
+            --scanners vuln --severity HIGH,CRITICAL --exit-code 1 --no-progress target/order-service-2.0.0.jar
+          docker run --rm -v "$PWD/admin:/src:ro" -w /src aquasec/trivy:0.76.1 fs \
+            --scanners vuln --severity HIGH,CRITICAL --exit-code 1 --no-progress --skip-dirs node_modules .
+      - uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: order-service-jar
+          path: target/order-service-*.jar
+          retention-days: 1
+
+  admin:
+    name: admin (Order Ledger build and type check)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: admin
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: admin/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: npx tsc --noEmit -p tsconfig.json
+      - run: npm run build
+
+  images:
+    name: images (build, scan and smoke)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Build the final images
+        run: |
+          docker build -t order-service:ci .
+          docker build -t order-admin:ci admin
+      - name: Scan the final images (HIGH and CRITICAL block)
+        run: |
+          for image in order-service:ci order-admin:ci; do
+            docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.76.1 image \
+              --scanners vuln --severity HIGH,CRITICAL --exit-code 1 --no-progress "$image"
+          done
+      - name: Smoke against PostgreSQL (token, create, replay, conflict, isolation)
+        env:
+          ORDERS_AUTH_SECRET: ci-only-secret-with-at-least-32-bytes-0123456789
+        run: bash scripts/smoke.sh order-service:ci
