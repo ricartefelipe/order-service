@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Token de cliente (ver scripts/issue-token.sh ou o provedor de identidade).
+ORDER_TOKEN="${ORDER_TOKEN:?defina ORDER_TOKEN com um token de cliente válido}"
+
 ORDER_SERVICE_URL="${ORDER_SERVICE_URL:-http://localhost:8080}"
 STATUS="${1:-CALCULATED}"
 PAGE="${2:-0}"
@@ -30,6 +33,7 @@ echo "X-Correlation-Id: ${CORRELATION_ID}"
 tmp_body="$(mktemp)"
 
 http_code=$(curl -sS -o "${tmp_body}" -w "%{http_code}" \
+  -H "Authorization: Bearer ${ORDER_TOKEN}" \
   -H "X-Correlation-Id: ${CORRELATION_ID}" \
   "${URL}")
 

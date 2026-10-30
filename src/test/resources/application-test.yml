@@ -1,0 +1,5 @@
+orders:
+  auth:
+    issuer: order-service-test
+    audience: order-service
+    secret: test-secret-with-at-least-thirty-two-bytes-0123456789

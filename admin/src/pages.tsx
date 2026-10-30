@@ -1,11 +1,16 @@
 import { FormEvent, useEffect, useState, type ReactNode } from 'react'
 import { Link, NavLink, useNavigate, useParams } from 'react-router-dom'
-import { api } from './api/client'
+import { api, ApiError } from './api/client'
+import { getClientToken, setClientToken, tokenSubject } from './auth'
 import type { CreateOrderItemInput, Order, OrderStatus } from './types'
 
-function money(value: number | undefined): string {
+function money(value: number | undefined, currency = 'BRL'): string {
   if (value == null || Number.isNaN(value)) return '—'
-  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+  try {
+    return value.toLocaleString('pt-BR', { style: 'currency', currency })
+  } catch {
+    return `${currency} ${value.toFixed(2)}`
+  }
 }
 
 function when(value: string | undefined): string {
@@ -35,6 +40,7 @@ function Shell({ title, lede, children }: { title: string; lede?: string; childr
           </NavLink>
           <NavLink to="/new">Novo</NavLink>
           <NavLink to="/lookup">Consulta</NavLink>
+          <NavLink to="/credential">Credencial</NavLink>
         </nav>
       </header>
       <div className="stack">
@@ -135,7 +141,7 @@ export function OrdersPage() {
                   <tr key={order.id}>
                     <td className="mono">{order.externalOrderId}</td>
                     <td>{statusBadge(order.status)}</td>
-                    <td className="mono">{money(order.totalAmount)}</td>
+                    <td className="mono">{money(order.totalAmount, order.currency)}</td>
                     <td>{when(order.createdAt)}</td>
                     <td>
                       <Link to={`/orders/${order.id}`}>Abrir</Link>
@@ -214,12 +220,16 @@ export function CreatePage() {
       })
       setNotice(
         result.created
-          ? 'Pedido criado (HTTP 201). Idempotência ativa para reenvios com o mesmo externalOrderId.'
-          : 'Replay idempotente (HTTP 200): pedido já existia com este externalOrderId.',
+          ? 'Pedido criado (HTTP 201). Reenvios com o mesmo externalOrderId e o mesmo payload devolvem este pedido.'
+          : 'Replay idempotente (HTTP 200): pedido já existia com este externalOrderId e o mesmo payload.',
       )
       window.setTimeout(() => navigate(`/orders/${result.order.id}`), 700)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Falha ao criar pedido')
+      if (err instanceof ApiError && err.status === 409) {
+        setError('Conflito (HTTP 409): este externalOrderId já existe com outro payload. O pedido original não foi alterado.')
+      } else {
+        setError(err instanceof Error ? err.message : 'Falha ao criar pedido')
+      }
     } finally {
       setLoading(false)
     }
@@ -380,7 +390,7 @@ export function OrderDetailPage() {
             </div>
             <div className="meta-card">
               <span>Total</span>
-              <strong className="mono">{money(order.totalAmount)}</strong>
+              <strong className="mono">{money(order.totalAmount, order.currency)}</strong>
             </div>
             <div className="meta-card">
               <span>Criado</span>
@@ -409,8 +419,8 @@ export function OrderDetailPage() {
                   <tr key={`${item.productId}-${index}`}>
                     <td className="mono">{item.productId}</td>
                     <td className="mono">{item.quantity}</td>
-                    <td className="mono">{money(item.unitPrice)}</td>
-                    <td className="mono">{money(item.lineTotal)}</td>
+                    <td className="mono">{money(item.unitPrice, order.currency)}</td>
+                    <td className="mono">{money(item.lineTotal, order.currency)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -423,6 +433,48 @@ export function OrderDetailPage() {
           </div>
         </div>
       ) : null}
+    </Shell>
+  )
+}
+
+export function CredentialPage() {
+  const [token, setToken] = useState(() => getClientToken())
+  const [saved, setSaved] = useState<string | null>(null)
+  const subject = tokenSubject(token)
+
+  function onSubmit(e: FormEvent) {
+    e.preventDefault()
+    setClientToken(token)
+    setSaved(token.trim() ? 'Token guardado nesta sessão do navegador.' : 'Token removido.')
+  }
+
+  return (
+    <Shell
+      title="Credencial"
+      lede="O console é um cliente da API: precisa de um token com escopo orders:read e, para criar, orders:create. Ele só vê os pedidos da origem (sub) do token."
+    >
+      <form className="panel create-panel" onSubmit={onSubmit}>
+        <div className="field">
+          <label htmlFor="token">Token de cliente (JWT)</label>
+          <textarea
+            id="token"
+            rows={4}
+            value={token}
+            onChange={(e) => setToken(e.target.value)}
+            autoComplete="off"
+            spellCheck={false}
+          />
+        </div>
+        <p className="muted">
+          {subject ? `Origem do token: ${subject}` : 'Cole o token emitido pelo provedor de identidade ou por scripts/issue-token.sh.'}
+        </p>
+        {saved ? <p className="notice">{saved}</p> : null}
+        <div className="actions">
+          <button type="submit" className="btn">
+            Guardar nesta sessão
+          </button>
+        </div>
+      </form>
     </Shell>
   )
 }

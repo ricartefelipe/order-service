@@ -104,3 +104,111 @@ databaseChangeLog:
             columns:
               - column:
                   name: order_id
+
+  - changeSet:
+      id: 002-origin-currency-fingerprint
+      author: order-service
+      comment: >-
+        Pedidos passam a pertencer a uma origem autenticada, carregam moeda e um fingerprint
+        versionado do payload. A unicidade passa a ser (origin, external_order_id). Os pedidos
+        anteriores recebem a origem e a moeda dos parâmetros legacy-origin e legacy-currency e um
+        fingerprint calculado com a mesma forma canônica de PayloadFingerprint (v1).
+      changes:
+        - addColumn:
+            tableName: orders
+            columns:
+              - column:
+                  name: origin
+                  type: varchar(100)
+                  defaultValue: ${legacy-origin}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: currency
+                  type: varchar(3)
+                  defaultValue: ${legacy-currency}
+                  constraints:
+                    nullable: false
+              - column:
+                  name: fingerprint_version
+                  type: varchar(10)
+                  defaultValue: v1
+                  constraints:
+                    nullable: false
+              - column:
+                  name: fingerprint
+                  type: varchar(64)
+        - sql:
+            dbms: postgresql
+            sql: >-
+              UPDATE orders o SET fingerprint = encode(sha256(convert_to(
+                'v1' || E'\n' || o.currency || E'\n' ||
+                (SELECT string_agg(line, E'\n' ORDER BY line COLLATE "C") FROM (
+                   SELECT i.product_id || E'\t' || i.quantity || E'\t' ||
+                          to_char(i.unit_price, 'FM99999999999999990.00') AS line
+                   FROM order_items i WHERE i.order_id = o.id) lines),
+                'UTF8')), 'hex')
+              WHERE o.fingerprint IS NULL
+        - addNotNullConstraint:
+            tableName: orders
+            columnName: fingerprint
+            columnDataType: varchar(64)
+        - dropDefaultValue:
+            tableName: orders
+            columnName: origin
+            columnDataType: varchar(100)
+        - dropDefaultValue:
+            tableName: orders
+            columnName: currency
+            columnDataType: varchar(3)
+        - dropUniqueConstraint:
+            tableName: orders
+            constraintName: orders_external_order_id_key
+        - addUniqueConstraint:
+            tableName: orders
+            columnNames: origin, external_order_id
+            constraintName: uk_orders_origin_external_order_id
+        - createIndex:
+            tableName: orders
+            indexName: idx_orders_origin_status_created_at
+            columns:
+              - column:
+                  name: origin
+              - column:
+                  name: status
+              - column:
+                  name: created_at
+        - createIndex:
+            tableName: orders
+            indexName: idx_orders_origin_created_at
+            columns:
+              - column:
+                  name: origin
+              - column:
+                  name: created_at
+      rollback:
+        - dropIndex:
+            tableName: orders
+            indexName: idx_orders_origin_created_at
+        - dropIndex:
+            tableName: orders
+            indexName: idx_orders_origin_status_created_at
+        - dropUniqueConstraint:
+            tableName: orders
+            constraintName: uk_orders_origin_external_order_id
+        - addUniqueConstraint:
+            tableName: orders
+            columnNames: external_order_id
+            constraintName: orders_external_order_id_key
+        - dropColumn:
+            tableName: orders
+            columnName: fingerprint
+        - dropColumn:
+            tableName: orders
+            columnName: fingerprint_version
+        - dropColumn:
+            tableName: orders
+            columnName: currency
+        - dropColumn:
+            tableName: orders
+            columnName: origin

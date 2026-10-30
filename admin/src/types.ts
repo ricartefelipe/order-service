@@ -9,7 +9,9 @@ export type OrderItem = {
 
 export type Order = {
   id: string
+  origin: string
   externalOrderId: string
+  currency: string
   status: OrderStatus
   totalAmount: number
   items: OrderItem[]
@@ -33,6 +35,7 @@ export type CreateOrderItemInput = {
 
 export type CreateOrderInput = {
   externalOrderId: string
+  currency?: string
   items: CreateOrderItemInput[]
 }
 

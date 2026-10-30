@@ -11,12 +11,17 @@ public record OrderItem(
         Money lineTotal
 ) {
 
+    public static final int MAX_QUANTITY = 1_000_000;
+
     public OrderItem {
         if (productId == null || productId.isBlank()) {
             throw new IllegalArgumentException("productId must not be blank");
         }
         if (quantity <= 0) {
             throw new IllegalArgumentException("quantity must be > 0");
+        }
+        if (quantity > MAX_QUANTITY) {
+            throw new IllegalArgumentException("quantity must be <= " + MAX_QUANTITY);
         }
         Objects.requireNonNull(unitPrice, "unitPrice must not be null");
         Objects.requireNonNull(lineTotal, "lineTotal must not be null");

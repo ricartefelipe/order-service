@@ -2,12 +2,10 @@ package com.example.order.application.pagination;
 
 import java.util.Objects;
 
-public record Sort(String property, SortDirection direction) {
+public record Sort(SortProperty property, SortDirection direction) {
 
     public Sort {
-        if (property == null || property.isBlank()) {
-            throw new IllegalArgumentException("property must not be blank");
-        }
+        Objects.requireNonNull(property, "property must not be null");
         Objects.requireNonNull(direction, "direction must not be null");
     }
 }

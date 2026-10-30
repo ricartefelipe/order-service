@@ -23,16 +23,17 @@ O Order Service entrega essa fundação confiável, do jeito que se coloca em pr
 
 | # | Recurso | Descrição |
 |---|---------|-----------|
-| 1 | Ingestão idempotente | Deduplicação por `externalOrderId` **sob concorrência**: o mesmo pedido nunca é criado duas vezes (201 na criação, 200 quando já existe). |
-| 2 | Cálculo correto de totais | `lineTotal` e `totalAmount` em `BigDecimal`, escala 2, `HALF_UP` — sem surpresa de centavo. |
-| 3 | Consulta para integração | `GET /orders/{id}` e `GET /orders` paginado/filtrável por status, prontos para o Sistema Externo B. |
-| 4 | Observabilidade | Correlation id via `X-Correlation-Id`, Actuator e logs estruturados para operar com confiança. |
-| 5 | Migrações versionadas | PostgreSQL 16 + Liquibase (YAML) — schema versionado e reprodutível. |
-| 6 | Documentação madura | ADRs (Clean Architecture, ingestão idempotente), `architecture.md`, `integration.md`, `runbook.md`, `technology.md`. |
-| 7 | Demonstrável | Scripts simulando os Sistemas Externos A e B, Swagger UI, Order Ledger (admin Vite), Docker Compose e CI. |
-| 8 | Order Ledger | Console ops (lista/criação/consulta) com feedback de idempotência — sem tela de login (API aberta). |
+| 1 | Ingestão idempotente | Deduplicação por origem + `externalOrderId` + fingerprint do payload **sob concorrência**: o mesmo pedido nunca é criado duas vezes (201 na criação, 200 no reenvio igual, 409 quando o mesmo id chega com dados diferentes). |
+| 2 | Cálculo correto de totais | `lineTotal` e `totalAmount` em `BigDecimal`, escala 2, `HALF_UP`, moeda por pedido e limites de quantidade e valor validados no servidor. |
+| 3 | Consulta para integração | `GET /orders/{id}` e `GET /orders` paginado, filtrável por status e por referência externa. Cada integrador só enxerga os próprios pedidos. |
+| 4 | Segurança máquina a máquina | Token JWT por integrador (OIDC client credentials via JWKS ou segredo compartilhado), com emissor, audiência, expiração e escopos `orders:create` / `orders:read`. |
+| 5 | Observabilidade | Correlation id via `X-Correlation-Id`, Actuator, métrica de desfechos da ingestão e logs estruturados. |
+| 6 | Migrações versionadas | PostgreSQL 16 + Liquibase (YAML) — schema versionado, com upgrade dos dados da 1.x. |
+| 7 | Documentação madura | ADRs (Clean Architecture, ingestão idempotente, autenticação por origem), `architecture.md`, `integration.md`, `runbook.md`, `technology.md`. |
+| 8 | Demonstrável e verificado | Scripts simulando os Sistemas Externos A e B, Swagger UI, Order Ledger, Docker Compose e CI real (build, testes com PostgreSQL, scan das imagens e smoke). |
+| 9 | Order Ledger | Console de operação (lista/criação/consulta) que autentica como um cliente da API com o próprio token e vê só a sua origem. |
 
-**Stack:** Java 21 · Spring Boot 3 · PostgreSQL 16 · Liquibase · OpenAPI/Swagger · Docker Compose.
+**Stack:** Java 21 · Spring Boot 4 · Spring Security (resource server) · PostgreSQL 16 · Liquibase · OpenAPI/Swagger · Docker Compose.
 
 ---
 
@@ -49,18 +50,21 @@ O Order Service entrega essa fundação confiável, do jeito que se coloca em pr
 ## Começando
 
 ```bash
-docker compose up -d
+cp .env.example .env
+docker compose up -d --build
 ```
 
-- API: `http://localhost:8080`
-- Swagger UI: `http://localhost:8080/swagger-ui.html`
-- Order Ledger (admin): `http://localhost:9086`
+- API: `http://127.0.0.1:8080`
+- Swagger UI: `http://127.0.0.1:8080/swagger-ui.html`
+- Order Ledger (admin): `http://127.0.0.1:9086`
 
 Simule a integração ponta a ponta:
 
 ```bash
+set -a; . ./.env; set +a
+export ORDER_TOKEN="$(./scripts/issue-token.sh system-a)"
 ./scripts/a_send_order.sh A-123456   # Sistema A envia pedido
-./scripts/b_pull_orders.sh           # Sistema B consulta pedidos calculados
+./scripts/b_pull_orders.sh           # consulta os pedidos da mesma origem
 ```
 
 Passo a passo, contratos e regras: [`README.md`](README.md) e [`docs/`](docs/).
@@ -83,6 +87,10 @@ Termos completos em [`LICENSE`](LICENSE).
 ## Combine e economize — Kit de Padrões de Produção
 
 O Order Service faz par com o **AssinaFlow** (cobrança recorrente com outbox, idempotência e retry). Juntos formam um **Kit de Padrões de Produção** em Spring Boot — ingestão idempotente + ciclo de cobrança confiável — ideal para quem está montando a fundação de um produto. Bundle com desconto sob consulta.
+
+Os dois kits são independentes: não existe integração técnica pronta entre eles (nenhum contrato, evento ou
+chamada entre os serviços). Ligar pedidos a assinaturas é um trabalho de integração sobre as APIs documentadas
+de cada um; veja a seção correspondente em [`docs/integration.md`](docs/integration.md).
 
 ---
 

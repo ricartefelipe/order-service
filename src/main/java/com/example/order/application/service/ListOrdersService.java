@@ -1,15 +1,14 @@
 package com.example.order.application.service;
 
+import com.example.order.application.dto.OrderFilter;
 import com.example.order.application.pagination.PageQuery;
 import com.example.order.application.pagination.PageResult;
 import com.example.order.application.port.OrderRepositoryPort;
 import com.example.order.application.usecase.ListOrdersUseCase;
 import com.example.order.domain.model.Order;
-import com.example.order.domain.model.OrderStatus;
+import com.example.order.domain.value.Origin;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Optional;
 
 @Service
 public class ListOrdersService implements ListOrdersUseCase {
@@ -22,7 +21,7 @@ public class ListOrdersService implements ListOrdersUseCase {
 
     @Override
     @Transactional(readOnly = true)
-    public PageResult<Order> list(Optional<OrderStatus> status, PageQuery pageQuery) {
-        return orderRepositoryPort.findAll(status, pageQuery);
+    public PageResult<Order> list(Origin origin, OrderFilter filter, PageQuery pageQuery) {
+        return orderRepositoryPort.findAll(origin, filter, pageQuery);
     }
 }

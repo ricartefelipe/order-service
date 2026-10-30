@@ -4,6 +4,7 @@ import com.example.order.application.exception.OrderNotFoundException;
 import com.example.order.application.port.OrderRepositoryPort;
 import com.example.order.application.usecase.GetOrderUseCase;
 import com.example.order.domain.model.Order;
+import com.example.order.domain.value.Origin;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,8 +21,8 @@ public class GetOrderService implements GetOrderUseCase {
 
     @Override
     @Transactional(readOnly = true)
-    public Order getById(UUID id) {
-        return orderRepositoryPort.findById(id)
+    public Order getById(Origin origin, UUID id) {
+        return orderRepositoryPort.findById(origin, id)
                 .orElseThrow(() -> new OrderNotFoundException(id));
     }
 }
