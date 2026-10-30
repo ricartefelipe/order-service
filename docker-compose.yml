@@ -6,7 +6,7 @@ services:
       POSTGRES_USER: orders
       POSTGRES_PASSWORD: orders
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U orders -d orders"]
       interval: 5s
@@ -25,20 +25,33 @@ services:
       SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-orders}
       SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-orders}
       SPRING_DATASOURCE_HIKARI_MAX_POOL_SIZE: ${SPRING_DATASOURCE_HIKARI_MAX_POOL_SIZE:-20}
+      ORDERS_AUTH_ISSUER: ${ORDERS_AUTH_ISSUER:-order-service-local}
+      ORDERS_AUTH_AUDIENCE: ${ORDERS_AUTH_AUDIENCE:-order-service}
+      ORDERS_AUTH_SECRET: ${ORDERS_AUTH_SECRET:?defina ORDERS_AUTH_SECRET no .env (veja .env.example)}
+      ORDERS_AUTH_JWKS_URI: ${ORDERS_AUTH_JWKS_URI:-}
+      ORDERS_DEFAULT_CURRENCY: ${ORDERS_DEFAULT_CURRENCY:-BRL}
+      ORDERS_LEGACY_CURRENCY: ${ORDERS_LEGACY_CURRENCY:-BRL}
+      ORDERS_LEGACY_ORIGIN: ${ORDERS_LEGACY_ORIGIN:-legacy}
     ports:
-      - "${PORT:-8080}:8080"
+      - "127.0.0.1:${PORT:-8080}:8080"
     depends_on:
       postgres:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/actuator/health || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
 
   order-admin:
     build:
       context: ./admin
     container_name: order-admin
     ports:
-      - "${ADMIN_PORT:-9086}:80"
+      - "127.0.0.1:${ADMIN_PORT:-9086}:80"
     depends_on:
-      - order-service
+      order-service:
+        condition: service_healthy
 
 volumes:
   pgdata:

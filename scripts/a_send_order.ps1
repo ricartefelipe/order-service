@@ -3,6 +3,11 @@ param(
   [string]$ExternalOrderId = $null
 )
 
+# Token de cliente (ver scripts/issue-token.sh ou o provedor de identidade).
+$OrderToken = $env:ORDER_TOKEN
+if (-not $OrderToken) { throw "Defina ORDER_TOKEN com um token de cliente válido" }
+
+
 if ([string]::IsNullOrWhiteSpace($OrderServiceUrl)) {
   $OrderServiceUrl = "http://localhost:8080"
 }
@@ -29,7 +34,7 @@ Write-Host "X-Correlation-Id: $correlationId"
 Write-Host "externalOrderId: $ExternalOrderId"
 
 try {
-  $response = Invoke-RestMethod -Method Post -Uri "$OrderServiceUrl/orders" -Body $payload -ContentType "application/json" -Headers @{"X-Correlation-Id"=$correlationId}
+  $response = Invoke-RestMethod -Method Post -Uri "$OrderServiceUrl/orders" -Body $payload -ContentType "application/json" -Headers @{"X-Correlation-Id"=$correlationId; "Authorization"="Bearer $OrderToken"}
   $response | ConvertTo-Json -Depth 10
 } catch {
   Write-Host "Request failed: $($_.Exception.Message)"
