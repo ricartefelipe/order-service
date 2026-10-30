@@ -1,5 +1,6 @@
 package com.example.order.config.error;
 
+import com.example.order.application.exception.IdempotencyConflictException;
 import com.example.order.application.exception.OrderNotFoundException;
 import com.example.order.config.correlation.CorrelationIdFilter;
 import jakarta.servlet.http.HttpServletRequest;
@@ -50,6 +51,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiErrorResponse> handleIllegalArgument(IllegalArgumentException ex, HttpServletRequest request) {
         return build(HttpStatus.BAD_REQUEST, ex.getMessage(), request, Collections.emptyList());
+    }
+
+    @ExceptionHandler(IdempotencyConflictException.class)
+    public ResponseEntity<ApiErrorResponse> handleIdempotencyConflict(IdempotencyConflictException ex, HttpServletRequest request) {
+        return build(HttpStatus.CONFLICT, ex.getMessage(), request, Collections.emptyList());
     }
 
     @ExceptionHandler(OrderNotFoundException.class)

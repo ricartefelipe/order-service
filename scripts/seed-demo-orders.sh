@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Token de cliente (ver scripts/issue-token.sh ou o provedor de identidade).
+ORDER_TOKEN="${ORDER_TOKEN:?defina ORDER_TOKEN com um token de cliente válido}"
+
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 API_BASE="${API_BASE:-http://127.0.0.1:8082}"
-COUNT="$(curl -fsS "${API_BASE}/orders?page=0&size=1" | sed -n 's/.*"totalElements":\([0-9]*\).*/\1/p' | head -1)"
+COUNT="$(curl -fsS -H "Authorization: Bearer ${ORDER_TOKEN}" "${API_BASE}/orders?page=0&size=1" | sed -n 's/.*"totalElements":\([0-9]*\).*/\1/p' | head -1)"
 COUNT="${COUNT:-0}"
 
 if [[ "${COUNT}" != "0" ]]; then
@@ -20,6 +23,7 @@ post() {
   shift
   curl -fsS -X POST "${API_BASE}/orders" \
     -H "Content-Type: application/json" \
+  -H "Authorization: Bearer ${ORDER_TOKEN}" \
     -H "X-Correlation-Id: seed-${external}" \
     -d "$@" >/dev/null
   echo "  ok ${external}"

@@ -9,15 +9,20 @@ import java.util.Objects;
  *
  * Invariants:
  * - Always scaled to 2 decimal places using HALF_UP.
+ * - Never above {@link #MAX_AMOUNT}, the largest value the {@code numeric(19,2)} columns can hold.
  */
 public record Money(BigDecimal amount) {
 
     public static final int SCALE = 2;
     public static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
+    public static final BigDecimal MAX_AMOUNT = new BigDecimal("99999999999999999.99");
 
     public Money {
         Objects.requireNonNull(amount, "amount must not be null");
         amount = amount.setScale(SCALE, ROUNDING_MODE);
+        if (amount.compareTo(MAX_AMOUNT) > 0) {
+            throw new IllegalArgumentException("amount must be <= " + MAX_AMOUNT.toPlainString());
+        }
     }
 
     public static Money zero() {

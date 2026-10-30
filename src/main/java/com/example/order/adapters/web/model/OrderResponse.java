@@ -7,7 +7,9 @@ import java.util.UUID;
 
 public record OrderResponse(
         UUID id,
+        String origin,
         String externalOrderId,
+        String currency,
         String status,
         BigDecimal totalAmount,
         List<OrderItemResponse> items,

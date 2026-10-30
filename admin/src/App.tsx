@@ -1,5 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
-import { CreatePage, LookupPage, OrderDetailPage, OrdersPage } from './pages'
+import { CreatePage, CredentialPage, LookupPage, OrderDetailPage, OrdersPage } from './pages'
 
 export default function App() {
   return (
@@ -8,6 +8,7 @@ export default function App() {
         <Route path="/" element={<OrdersPage />} />
         <Route path="/new" element={<CreatePage />} />
         <Route path="/lookup" element={<LookupPage />} />
+        <Route path="/credential" element={<CredentialPage />} />
         <Route path="/orders/:id" element={<OrderDetailPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

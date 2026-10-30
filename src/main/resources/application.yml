@@ -33,6 +33,21 @@ spring:
   liquibase:
     enabled: true
     change-log: classpath:db/changelog/db.changelog-master.yaml
+    parameters:
+      # Moeda atribuída aos pedidos gravados antes da versão 2.0.0 (changeset 002).
+      legacy-currency: ${ORDERS_LEGACY_CURRENCY:BRL}
+      # Origem atribuída aos pedidos gravados antes da versão 2.0.0. Só esse cliente os enxerga.
+      legacy-origin: ${ORDERS_LEGACY_ORIGIN:legacy}
+
+orders:
+  default-currency: ${ORDERS_DEFAULT_CURRENCY:BRL}
+  auth:
+    # Emissor e audiência exigidos em todo token de cliente.
+    issuer: ${ORDERS_AUTH_ISSUER:order-service-local}
+    audience: ${ORDERS_AUTH_AUDIENCE:order-service}
+    # Exatamente um dos dois: JWKS do provedor de identidade (client credentials) ou segredo HMAC (>= 32 bytes).
+    jwks-uri: ${ORDERS_AUTH_JWKS_URI:}
+    secret: ${ORDERS_AUTH_SECRET:}
 
 springdoc:
   swagger-ui:
@@ -45,7 +60,9 @@ management:
         include: health,info,metrics,prometheus
   endpoint:
     health:
-      show-details: always
+      show-details: never
+      probes:
+        enabled: true
 
 info:
   app:

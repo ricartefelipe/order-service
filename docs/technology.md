@@ -3,21 +3,23 @@
 ## Stack
 
 - **Java 21**
-- **Spring Boot 3.x**
-  - Spring Web (REST)
+- **Spring Boot 4.0.x**
+  - Spring Web MVC (REST)
+  - Spring Security (OAuth2 resource server, tokens JWT de cliente)
   - Spring Validation (Bean Validation)
   - Spring Data JPA + Hibernate
-  - Spring Boot Actuator
+  - Spring Boot Actuator + Micrometer
 - **PostgreSQL 16** (Docker)
 - **Liquibase** (YAML)
 - **OpenAPI** via `springdoc-openapi` (Swagger UI)
-- **Testes**: JUnit 5 + Spring Boot Test + Testcontainers (PostgreSQL)
+- **Testes**: JUnit 5 + Spring Boot Test + Testcontainers 2 (PostgreSQL)
+- **CI**: GitHub Actions (build, testes com PostgreSQL, scan de dependências e imagens com Trivy, smoke da imagem)
 
 ## Motivos das escolhas
 
 ### PostgreSQL 16
 - Banco relacional maduro para garantir integridade (FK, UNIQUE) e consistência sob concorrência.
-- Índices usados como mecanismo de idempotência (unicidade em `external_order_id`).
+- Índices usados como mecanismo de idempotência (unicidade em `(origin, external_order_id)`).
 
 ### JPA/Hibernate + Spring Data
 - Produtividade e padrão enterprise.
@@ -39,8 +41,8 @@
 **Risco:** retries do Externo A podem criar duplicidade.
 
 **Mitigação:**
-- UNIQUE constraint no banco.
-- `saveAndFlush` dentro de transação + fallback para leitura por `externalOrderId`.
+- UNIQUE constraint no banco por origem.
+- `saveAndFlush` dentro de transação + leitura por origem e `externalOrderId` + comparação de fingerprint (409 se diferente).
 
 ### N+1 em listagens
 **Risco:** ao listar pedidos e acessar itens, executar uma query por pedido.
@@ -67,5 +69,5 @@
 ## Convenções
 
 - Dinheiro: `BigDecimal` com escala **2** e arredondamento **HALF_UP** (value object `Money`).
-- Status: `RECEIVED`, `CALCULATED`.
+- Status: `RECEIVED`, `CALCULATED`. Moeda por pedido (ISO 4217); limites: 500 itens, quantidade 1.000.000, total 99999999999999999.99.
 - Correlation id: header `X-Correlation-Id` + MDC (`corr=<id>` nos logs).
