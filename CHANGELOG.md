@@ -3,6 +3,11 @@
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). O repositório não usa tags; a
 versão está em `pom.xml` e no OpenAPI (`info.version`).
 
+## [2.0.2] - 2026-11-04
+
+### Security
+- imagens fixadas por versão e digest.
+
 ## [2.0.1] - 2026-11-02
 
 ### Removed
