@@ -20,7 +20,7 @@ docker network create "$NET" >/dev/null
 docker run -d --name "smoke-db-$$" --network "$NET" \
   -e POSTGRES_DB=orders -e POSTGRES_USER=orders -e POSTGRES_PASSWORD=orders \
   --health-cmd "pg_isready -U orders -d orders" --health-interval 2s --health-retries 30 \
-  postgres:16 >/dev/null
+  postgres:16@sha256:5db6dac2ef5dcff512f4f00a009c3c332b9f2f28f24277175bf3e4a3d02ef83a >/dev/null
 for _ in $(seq 1 40); do
   [ "$(docker inspect -f '{{.State.Health.Status}}' "smoke-db-$$")" = healthy ] && break
   sleep 2
