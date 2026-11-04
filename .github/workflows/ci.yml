@@ -42,9 +42,9 @@ jobs:
           PY
       - name: Scan the packaged dependencies and the admin lockfile (HIGH and CRITICAL block)
         run: |
-          docker run --rm -v "$PWD:/src:ro" -w /src aquasec/trivy:0.76.1 fs \
+          docker run --rm -v "$PWD:/src:ro" -w /src aquasec/trivy:0.76.1@sha256:790fd66d1697395d8693d1acaa1ea702406a20f109b6fc7bac8db623eca6c06c fs \
             --scanners vuln --severity HIGH,CRITICAL --exit-code 1 --no-progress target/order-service-2.0.0.jar
-          docker run --rm -v "$PWD/admin:/src:ro" -w /src aquasec/trivy:0.76.1 fs \
+          docker run --rm -v "$PWD/admin:/src:ro" -w /src aquasec/trivy:0.76.1@sha256:790fd66d1697395d8693d1acaa1ea702406a20f109b6fc7bac8db623eca6c06c fs \
             --scanners vuln --severity HIGH,CRITICAL --exit-code 1 --no-progress --skip-dirs node_modules .
       - uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         with:
@@ -83,7 +83,7 @@ jobs:
       - name: Scan the final images (HIGH and CRITICAL block)
         run: |
           for image in order-service:ci order-admin:ci; do
-            docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.76.1 image \
+            docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.76.1@sha256:790fd66d1697395d8693d1acaa1ea702406a20f109b6fc7bac8db623eca6c06c image \
               --scanners vuln --severity HIGH,CRITICAL --exit-code 1 --no-progress "$image"
           done
       - name: Smoke against PostgreSQL (token, create, replay, conflict, isolation)
